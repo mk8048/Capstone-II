@@ -1,0 +1,202 @@
+# =========================================================
+# OS / Editor
+# =========================================================
+
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+.idea/
+*.swp
+*.swo
+*~
+
+
+# =========================================================
+# Python
+# =========================================================
+
+__pycache__/
+*.py[cod]
+*$py.class
+
+*.so
+.Python
+
+.venv/
+venv/
+env/
+ENV/
+
+pip-wheel-metadata/
+*.egg-info/
+.eggs/
+dist/
+build/
+
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+.ipynb_checkpoints/
+
+
+# =========================================================
+# Python logs
+# =========================================================
+
+*.log
+logs/
+log/
+
+
+# =========================================================
+# Node / React / Vite
+# =========================================================
+
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+dashboard/dist/
+dashboard/build/
+dashboard/.vite/
+
+.vite/
+
+
+# =========================================================
+# Environment variables / secrets
+# =========================================================
+
+.env
+.env.*
+!.env.example
+
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+secrets/
+credentials/
+service-account*.json
+
+
+# =========================================================
+# Docker / local volume data
+# =========================================================
+
+docker-data/
+volumes/
+data/postgres/
+data/minio/
+data/nats/
+
+postgres-data/
+minio-data/
+nats-data/
+
+
+# =========================================================
+# Database files
+# =========================================================
+
+*.db
+*.sqlite
+*.sqlite3
+
+
+# =========================================================
+# Project generated data
+# =========================================================
+
+uploads/
+downloads/
+temp/
+tmp/
+
+event-images/
+snapshots/
+frames/
+crops/
+results/
+runs/
+
+# YOLO / ML training outputs
+weights/
+models/
+checkpoints/
+*.pt
+*.pth
+*.onnx
+*.engine
+*.tflite
+*.pb
+
+# Ultralytics default output
+runs/
+
+
+# =========================================================
+# Video / image dataset files
+# =========================================================
+
+datasets/
+dataset/
+videos/
+video/
+samples/videos/
+
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+
+*.jpg
+*.jpeg
+*.png
+*.bmp
+*.gif
+*.webp
+
+!docs/images/
+!docs/images/*.jpg
+!docs/images/*.jpeg
+!docs/images/*.png
+!docs/images/*.webp
+
+
+# =========================================================
+# MinIO / object storage local test files
+# =========================================================
+
+.minio.sys/
+
+
+# =========================================================
+# Jupyter / notebooks
+# =========================================================
+
+*.ipynb
+
+
+# =========================================================
+# Backup files
+# =========================================================
+
+*.bak
+*.backup
+*.old
+*.orig
