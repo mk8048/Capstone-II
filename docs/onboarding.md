@@ -581,13 +581,13 @@ vi ~/.bashrc
 ```
 
 파일 맨 아래에 `i`로 입력 모드 진입 후 붙여넣는다.
-
-​```bash
+​
+```bash
 parse_git_branch() {
     git branch 2>/dev/null | grep '^*' | sed 's/* //'
 }
 PS1='\u@\h:\w\[\033[33m\] $(parse_git_branch)\[\033[0m\]\$ '
-​```
+```
 
 저장: `Esc` → `:wq`
 
