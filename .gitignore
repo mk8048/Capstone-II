@@ -200,3 +200,11 @@ samples/videos/
 *.backup
 *.old
 *.orig
+
+# =========================================================
+# Docker volumes
+# =========================================================
+
+infra/postgres/data/
+infra/minio/data/
+infra/nats/data/
