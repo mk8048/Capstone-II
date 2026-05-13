@@ -509,6 +509,7 @@ git commit -m "메시지"   # 커밋
 git push                # 푸시
 git pull                # 최신 받기
 git checkout <브랜치명>  # 브랜치 전환
+git branch              # 현재 branch 확인 (현재 branch 앞에 `*` 표시가 붙음)
 ```
 
 ## Docker (VM에서만 사용 — 본인 PC에서는 안 함)
@@ -541,10 +542,10 @@ psql -h localhost -p 5432 -U capstone2 -d capstone2
 ```
 main                    ← 안정 버전 (시연/제출용)
 └── dev                 ← 통합 개발 브랜치
-    ├── feature/vision-server     ← Vision 담당
-    ├── feature/main-server       ← Main Server 담당
-    ├── feature/llm-server        ← LLM 담당
-    └── feature/dashboard         ← Dashboard 담당
+    ├── fea/vision-server     ← Vision 담당
+    ├── fea/main-server       ← Main Server 담당
+    ├── fea/llm-server        ← LLM 담당
+    └── fea/dashboard         ← Dashboard 담당
 ```
 
 모든 브랜치는 미리 생성되어 있다. 각자 본인 영역의 `feature/*` 브랜치로 전환해서 작업한다.
@@ -553,10 +554,10 @@ main                    ← 안정 버전 (시연/제출용)
 
 | 담당 | 브랜치명 |
 |------|---------|
-| Vision Server | `feature/vision-server` |
-| Main Server   | `feature/main-server`   |
-| LLM Server    | `feature/llm-server`    |
-| Dashboard     | `feature/dashboard`     |
+| Vision Server | `fea/vision-server` |
+| Main Server   | `fea/main-server`   |
+| LLM Server    | `fea/llm-server`    |
+| Dashboard     | `fea/dashboard`     |
 
 ## 16-3. 본인 브랜치로 전환 (clone 직후 1회)
 
@@ -565,10 +566,43 @@ main                    ← 안정 버전 (시연/제출용)
 git fetch --all
 
 # 본인 브랜치로 전환 (원격 브랜치로부터 자동 추적)
-git checkout feature/<본인영역>
+git checkout fea/<본인영역>
 ```
 
-## 16-4. 평소 작업 흐름
+## 16-4. 터미널 프롬프트에 현재 브랜치 표시 (선택)
+
+매번 `git branch`로 현재 브랜치를 확인하기 번거로우면 프롬프트에 자동 표시되도록 설정한다.
+
+`~/.bashrc` 끝에 다음 내용을 추가한다.
+
+```bash
+vi ~/.bashrc
+```
+
+파일 맨 아래에 `i`로 입력 모드 진입 후 붙여넣는다.
+
+​```bash
+parse_git_branch() {
+    git branch 2>/dev/null | grep '^*' | sed 's/* //'
+}
+PS1='\u@\h:\w\[\033[33m\] $(parse_git_branch)\[\033[0m\]\$ '
+​```
+
+저장: `Esc` → `:wq`
+
+적용:
+
+```bash
+source ~/.bashrc
+```
+
+이후 프롬프트가 다음과 같이 표시된다.
+
+```
+ubuntu@ubuntu:~/projects/Capstone-II fea/main-server$
+```
+
+## 16-5. 평소 작업 흐름
 자신이 작업하고 있는 경로에서 `code .` 명령어를 입력 후 vscode를 실행하여 vscode 내에서 작업 및 git push & pull을 진행한다.
 아래 명령어는 CLI 환경에서의 git 명령어들이다.
 
@@ -593,15 +627,15 @@ git merge feature/<본인영역>
 git push
 ```
 
-## 16-5. 규칙
+## 16-6. 규칙
 
 - `main` 브랜치에 직접 push 금지 (시연 직전에만 머지)
 - 본인 영역 외 폴더 수정 시 팀원들에게 사전 공유
 - 인프라 파일(`docker-compose.yml`, `init.sql`, `.env.example` 등) 수정은 main-server 담당자와 협의
 - 커밋 메시지는 영문 또는 한글 자유. 한 줄로 간결하게 작성
-- 충돌(conflict) 발생 시 본인이 해결 후 push / 안되면 팀원들에게 공유 및 논의
+- 충돌(conflict) 발생 시 본인이 해결 후 push / 해결 어려울 시 팀원들과 공유 및 논의
 
-## 16-6. 커밋 메시지 권장 형식
+## 16-7. 커밋 메시지 권장 형식
 
 ```
 <타입>: <간단 설명>
