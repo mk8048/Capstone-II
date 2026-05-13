@@ -635,6 +635,8 @@ git push
 - 인프라 파일(`docker-compose.yml`, `init.sql`, `.env.example` 등) 수정은 main-server 담당자와 협의
 - 커밋 메시지는 영문 또는 한글 자유. 한 줄로 간결하게 작성
 - 충돌(conflict) 발생 시 본인이 해결 후 push / 해결 어려울 시 팀원들과 공유 및 논의
+- 작업 시작 시 `현재 branch 확인 -> git pull` 과정을 거쳐 항상 최신 version에서 작업 시작
+- 수시로 `git pull` & `git push` 하며 작업 수행
 
 ## 16-7. 커밋 메시지 권장 형식
 
