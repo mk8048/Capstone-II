@@ -604,6 +604,7 @@ ubuntu@ubuntu:~/projects/Capstone-II fea/main-server$
 
 ## 16-5. 평소 작업 흐름
 자신이 작업하고 있는 경로에서 `code .` 명령어를 입력 후 vscode를 실행하여 vscode 내에서 작업 및 git push & pull을 진행한다.
+
 아래 명령어는 CLI 환경에서의 git 명령어들이다.
 
 ```bash
