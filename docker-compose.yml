@@ -1,0 +1,63 @@
+# ============================================================
+# LLM 기반 CCTV 관제 시스템 - 인프라 스택
+# Stage 1: PostgreSQL, MinIO, NATS
+# ============================================================
+
+services:
+  postgres:
+    image: postgres:18
+    container_name: capstone-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      TZ: Asia/Seoul
+      PGTZ: Asia/Seoul
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - ./infra/postgres/data:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: capstone-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      TZ: Asia/Seoul
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - ./infra/minio/data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  nats:
+    image: nats:2.10-alpine
+    container_name: capstone-nats
+    restart: unless-stopped
+    command: ["-js", "-m", "8222", "-sd", "/data"]
+    environment:
+      TZ: Asia/Seoul
+    ports:
+      - "${NATS_PORT:-4222}:4222"
+      - "${NATS_MONITOR_PORT:-8222}:8222"
+    volumes:
+      - ./infra/nats/data:/data
+
+networks:
+  default:
+    name: capstone-net
