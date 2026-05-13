@@ -602,29 +602,55 @@ source ~/.bashrc
 ubuntu@ubuntu:~/projects/Capstone-II fea/main-server$
 ```
 
-## 16-5. 평소 작업 흐름
+## 16-5. 평소 작업 (시작 / 작업 중 / 완료)
 자신이 작업하고 있는 경로에서 `code .` 명령어를 입력 후 vscode를 실행하여 vscode 내에서 작업 및 git push & pull을 진행한다.
 
-아래 명령어는 CLI 환경에서의 git 명령어들이다.
+아래 명령어는 CLI 환경에서의 git 명령어들이다. 모두 `vscode terminal`에서도 진행 가능
 
 ```bash
-# 1. 작업 시작 전, dev의 최신 변경 받기
+# === 작업 시작 시 ===
+
+# 1. 프로젝트 폴더로 이동
+cd ~/projects/Capstone-II
+
+# 2. 현재 브랜치 확인
+git branch
+# *이 fea/<본인영역>에 붙어있는지 확인
+
+# 3. dev의 최신 변경 받기
 git checkout dev
 git pull
 
-# 2. 본인 브랜치로 돌아가서 dev 변경 반영
-git checkout feature/<본인영역>
+# 4. 본인 브랜치로 돌아가서 dev 변경 반영
+git checkout fea/<본인영역>
 git merge dev
 
-# 3. 작업 → 커밋 → 푸시
+# 5. SSH 터널 살아있는지 확인
+ps aux | grep "ssh -fN"
+# 결과 없으면 다시 띄움
+ssh -fN capstone-vm
+
+# 6. VM 인프라 접속 확인
+nc -zv localhost 5432    # Postgres
+nc -zv localhost 9001    # MinIO
+nc -zv localhost 4222    # NATS
+# 셋 다 succeeded 나와야 함
+
+
+# === 작업 중 ===
+
+# 7. 작업 → 커밋 → 푸시
 git add .
 git commit -m "메시지"
 git push
 
-# 4. 어느 정도 완성되면 dev에 머지
+
+# === 작업 완료 후 ===
+
+# 8. 어느 정도 완성되면 dev에 머지
 git checkout dev
 git pull
-git merge feature/<본인영역>
+git merge fea/<본인영역>
 git push
 ```
 
