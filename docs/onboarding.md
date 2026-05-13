@@ -394,6 +394,7 @@ nc -zv localhost 4222
 ## 12-3. PostgreSQL 접속
 
 ```bash
+sudo apt install -y postgresql-client # psql 설치
 psql -h localhost -p 5432 -U capstone2 -d capstone2 -c "\dt"
 # 비밀번호 입력
 ```
