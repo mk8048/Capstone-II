@@ -208,3 +208,9 @@ samples/videos/
 infra/postgres/data/
 infra/minio/data/
 infra/nats/data/
+
+# =========================================================
+# Personal AI agent notes (not for team)
+# =========================================================
+
+.ai-notes/
