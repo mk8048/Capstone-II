@@ -1,89 +1,56 @@
-# LLM Image Analysis with NATS
+0. LLM Image Analysis with NATS
 
-이미지를 LLM으로 분석하고 결과를 JSON 형태로 NATS에 publish하는 프로젝트입니다.
+이미지를 LLM으로 분석한 뒤, 분석 결과를 JSON 형식으로 변환하여 NATS 메시지로 publish/subscribe 하는 프로젝트입니다.
 
-## 구성
+1. 구성
 
-- main.py
-- llm_client.py
-- nats_publisher.py
+- `main.py` : 이미지 분석 실행 및 NATS 메시지 생성
+- `llm_client.py` : LLM 이미지 분석 요청
+- `nats_publisher.py` : 분석 결과를 NATS로 publish
+- `nats_subscriber.py` : NATS 메시지 subscribe 및 출력
+- `test.jpg` : 테스트용 이미지
 
-## 기능
+2. 기능
 
-- 이미지 분석
-- JSON 결과 생성
+- 이미지 입력
+- LLM 기반 상황 요약 생성
+- JSON 메시지 생성
 - NATS publish
+- NATS subscribe
 
-## 실행 결과
+3. 실행 결과
 
-```json
+3-1. Main 실행 결과
+
+```text
+NATS 전송 메시지:
 {
-  "summary": "도보로 횡단보도를 건너는 여러 명의 사람들이 도시 도로에서 걸어가는 장면입니다. 사람들이 마스크를 착용하고 있으며, 주변에는 차량과 버스도 있습니다. 날씨는 맑아 보이고, 사람들이 다양한 의상과 스타일로 이동 중입니다.",
+  "event_id": "evt_0001",
+  "camera_id": "cam01",
+  "source": "llm",
+  "timestamp": "2026-05-20T13:00:13.255713+09:00",
+  "data": {
+    "model_name": "ministral-3:latest",
+    "summary": "도로는 주행 중인 차량과 버스, 그리고 횡단보도를 건너는 여러 사람이 있는 도시의 활기찬 도로 상황으로, 일부 사람들은 마스크를 쓰고 있다."
+  }
+}
+NATS publish 완료
+```
 
-  "objects": [
-    {
-      "type": "people",
-      "details": [
-        {
-          "description": "여성 (피어스와 블론드 헤어, 블랙 드레스, 핑크색 가방)",
-          "action": "횡단보도를 건너다"
-        },
-        {
-          "description": "여성 (블랙 드레스, 핑크색 마스크, 핑크색 가방)",
-          "action": "횡단보도를 건너다"
-        },
-        {
-          "description": "남성 (블랙 티셔츠, 블랙 바지, 마스크)",
-          "action": "횡단보도를 건너다"
-        },
-        {
-          "description": "남성 (화이트 티셔츠, 블랙 바지, 마스크)",
-          "action": "횡단보도를 건너다"
-        },
-        {
-          "description": "남성 (블랙 티셔츠, 블루색 슬리퍼, 핑크색 가방)",
-          "action": "횡단보도를 건너다"
-        },
-        {
-          "description": "여성 (블랙 드레스, 핑크색 마스크, 핑크색 가방)",
-          "action": "횡단보도를 건너다"
-        }
-      ]
-    },
-    {
-      "type": "vehicles",
-      "details": [
-        {
-          "type": "car",
-          "description": "백색 SUV 차량, 도로에서 이동 중"
-        },
-        {
-          "type": "bus",
-          "description": "노란색 버스, 도로에서 이동 중"
-        }
-      ]
-    },
-    {
-      "type": "road_feature",
-      "details": [
-        {
-          "type": "crosswalk",
-          "description": "흰색 가로등선으로 표시된 횡단보도"
-        }
-      ]
-    }
-  ],
+3-2. Subscriber 실행 결과
 
-  "risk_level": "low",
-
-  "risk_reason": [
-    {
-      "reason": "모든 횡단보도 이용자들이 안전하게 횡단보도를 건너고 있으며, 차량과 버스도 정지 또는 속도를 조절하고 있어 교통 사고의 위험은 낮아 보입니다.",
-      "additional_notes": "하지만, 마스크 착용과 거리두기 등 코로나19 관련 안전 조치의 유무로 인해 사회적 거리두기 준수 여부를 확인할 수 없습니다."
-    }
-  ]
+```text
+NATS 메시지 수신:
+{
+  "event_id": "evt_0001",
+  "camera_id": "cam01",
+  "source": "llm",
+  "timestamp": "2026-05-20T13:00:13.255713+09:00",
+  "data": {
+    "model_name": "ministral-3:latest",
+    "summary": "도로는 주행 중인 차량과 버스, 그리고 횡단보도를 건너는 여러 사람이 있는 도시의 활기찬 도로 상황으로, 일부 사람들은 마스크를 쓰고 있다."
+  }
 }
 ```
-NATS publish 완료
 
-종료 코드 0(으)로 완료된 프로세스
+Subscriber에서 Main이 publish한 JSON 메시지가 동일하게 수신되면 NATS publish/subscribe가 정상적으로 동작한 것입니다.
