@@ -33,6 +33,9 @@ venv/
 env/
 ENV/
 
+# pyenv (Linux 사용자 로컬 Python 버전 — 팀 OS별로 다를 수 있어 무시)
+.python-version
+
 pip-wheel-metadata/
 *.egg-info/
 .eggs/
@@ -208,3 +211,9 @@ samples/videos/
 infra/postgres/data/
 infra/minio/data/
 infra/nats/data/
+
+# =========================================================
+# Personal AI agent notes (not for team)
+# =========================================================
+
+.ai-notes/
