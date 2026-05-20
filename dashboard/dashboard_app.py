@@ -73,15 +73,13 @@ HTML_TEMPLATE = """
     <header>
         <h1>Dashboard</h1>
         <p class="small">NATS 구독 + MediaMTX 스트림 표시용 테스트 페이지입니다. 환경 변수로 <code>NATS_URL</code> / <code>MEDIA_URL</code> 설정 가능.</p>
-        <p class="small">NATS 상태: <strong>{{ nats_status }}</strong> / {{ nats_status_detail }}</p>
+        <p class="small">NATS 상태: <strong id="nats-status">{{ nats_status }}</strong> / <span id="nats-status-detail">{{ nats_status_detail }}</span></p>
     </header>
     <div class="container">
         <section class="card">
-            <h2>실시간 메시지</h2>
-            <p class="small">최근 {{ message_count }}건 / 최대 {{ max_messages }}건</p>
-            <div class="json-block">
-{{ message_html }}
-            </div>
+            <h2>실시간 메시지 <span class="small" id="poll-indicator" style="margin-left:8px;"></span></h2>
+            <p class="small">최근 <span id="message-count">{{ message_count }}</span>건 / 최대 {{ max_messages }}건</p>
+            <div class="json-block" id="message-block">{{ message_html }}</div>
         </section>
         <section class="card">
             <h2>MediaMTX 스트림</h2>
@@ -123,6 +121,38 @@ HTML_TEMPLATE = """
             iframe.src = "about:blank";
             setTimeout(() => { iframe.src = mediaUrl; }, 50);
         }
+
+        // ----- 실시간 메시지 폴링 (3초 간격, iframe은 건드리지 않음) -----
+        const POLL_INTERVAL_MS = 3000;
+        const indicator = document.getElementById("poll-indicator");
+
+        async function pollMessages() {
+            try {
+                const resp = await fetch("/messages", { cache: "no-store" });
+                if (!resp.ok) {
+                    indicator.textContent = "(polling failed: " + resp.status + ")";
+                    return;
+                }
+                const data = await resp.json();
+                document.getElementById("nats-status").textContent = data.nats_status;
+                document.getElementById("nats-status-detail").textContent = data.nats_status_detail;
+                document.getElementById("message-count").textContent = data.count;
+                const block = document.getElementById("message-block");
+                if (!data.messages || data.messages.length === 0) {
+                    block.textContent = "대기 중입니다... NATS 서버와 연결 후 메시지가 표시됩니다.";
+                } else {
+                    block.textContent = data.messages.join("\\n\\n---\\n\\n");
+                }
+                indicator.textContent = "(updated " + new Date().toLocaleTimeString() + ")";
+            } catch (e) {
+                indicator.textContent = "(polling error)";
+                console.warn("polling error:", e);
+            }
+        }
+
+        // 페이지 로드 직후 한 번, 이후 3초 간격
+        pollMessages();
+        setInterval(pollMessages, POLL_INTERVAL_MS);
     </script>
 </body>
 </html>
@@ -255,6 +285,20 @@ def index():
         nats_status=nats_status,
         nats_status_detail=nats_status_detail,
     )
+
+
+@app.route("/messages", methods=["GET"])
+def messages_json():
+    """JS polling용: 현재 messages + NATS 상태를 JSON으로 반환."""
+    with messages_lock:
+        current = list(messages)
+    return {
+        "messages": [format_message(m) for m in current],
+        "count": len(current),
+        "max": MAX_MESSAGES,
+        "nats_status": nats_status,
+        "nats_status_detail": nats_status_detail,
+    }
 
 
 @app.route("/set-media-url", methods=["POST"])
