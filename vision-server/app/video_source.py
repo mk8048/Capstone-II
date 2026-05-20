@@ -5,8 +5,10 @@ import cv2
 
 class VideoSource:
     def __init__(self, source: str):
-        source_arg: int | str = int(source) if source.isdigit() else source
-        self.cap = cv2.VideoCapture(source_arg)
+        if source.isdigit():
+            self.cap = cv2.VideoCapture(int(source), cv2.CAP_DSHOW)
+        else:
+            self.cap = cv2.VideoCapture(source)
         if not self.cap.isOpened():
             raise RuntimeError(f"failed to open video source: {source}")
 
