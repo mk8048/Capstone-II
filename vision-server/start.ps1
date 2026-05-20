@@ -74,6 +74,39 @@ if ($ready) {
     Write-Warning "[start] MediaMTX 8554 not listening after 5s; continuing anyway"
 }
 
+# --- 5b. LAN IP 자동 감지 + Dashboard에 넣을 URL 표시 ---
+# UDP "connect" 트릭: 실제 전송은 없고, OS가 default route 인터페이스를 선택해줌
+# → WSL 가상 인터페이스 / 루프백 자동 제외
+$lanIp = $null
+try {
+    $sock = New-Object System.Net.Sockets.Socket('InterNetwork', 'Dgram', 'Udp')
+    $sock.Connect('8.8.8.8', 80)
+    $lanIp = $sock.LocalEndPoint.Address.ToString()
+    $sock.Close()
+} catch {
+    $lanIp = $null
+}
+
+# .env에서 CAMERA_ID 추출 (없으면 cam01)
+$cameraId = "cam01"
+$envFile = Join-Path $scriptDir ".env"
+if (Test-Path $envFile) {
+    $line = Get-Content $envFile | Where-Object { $_ -match "^\s*CAMERA_ID\s*=" } | Select-Object -First 1
+    if ($line) {
+        $cameraId = ($line -split "=", 2)[1].Trim()
+    }
+}
+
+Write-Host ""
+if ($lanIp) {
+    Write-Host "[start] Vision PC LAN IP: $lanIp"
+    Write-Host "[start] MEDIA_URL:"
+    Write-Host "        http://${lanIp}:8889/${cameraId}/"
+} else {
+    Write-Warning "[start] LAN IP 자동 감지 실패. ipconfig로 수동 확인 필요"
+}
+Write-Host ""
+
 # --- 6. Vision Server foreground 실행 + finally cleanup ---
 Write-Host "[start] starting Vision Server (Ctrl+C to stop both)"
 Write-Host ""
