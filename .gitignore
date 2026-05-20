@@ -208,3 +208,5 @@ samples/videos/
 infra/postgres/data/
 infra/minio/data/
 infra/nats/data/
+
+.ai-notes/
