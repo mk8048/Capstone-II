@@ -22,13 +22,13 @@
 
 ```json
 {
-  "event_id": "evt_0001",
-  "camera_id": "cam01",
-  "source": "llm",
-  "timestamp": "2026-05-20T13:00:13.255713+09:00",
+  "event_id": "evt_0001", # 분석 대상 이벤트 ID
+  "camera_id": "cam01", # 카메라 ID
+  "source": "llm", # 고정값 "llm"
+  "timestamp": "2026-03-23T15:30:02+09:00", # 분석 완료 시각
   "data": {
-    "model_name": "ministral-3:latest",
-    "summary": "도로는 주행 중인 차량과 버스, 그리고 횡단보도를 건너는 여러 사람이 있는 도시의 활기찬 도로 상황으로, 일부 사람들은 마스크를 쓰고 있다."
+    "model_name": "llava:7b", # 사용된 모델명
+    "summary": "A person appears to be entering the monitored area." # 상황 요약 (자연어)
   }
 }
 ```
