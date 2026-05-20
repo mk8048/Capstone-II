@@ -1,3 +1,8 @@
+"""
+Single-image prototype kept for reference. Not the production entrypoint.
+The MVP server lives under app/ — run with `python -m app.main`.
+"""
+
 import asyncio
 import json
 import uuid
