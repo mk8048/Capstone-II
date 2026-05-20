@@ -5,11 +5,13 @@ import json
 import os
 import threading
 import time
+import urllib.error
+import urllib.request
 import webbrowser
 from collections import deque
 from datetime import datetime
 
-from flask import Flask, render_template_string, request
+from flask import Flask, redirect, render_template_string, request, url_for
 
 try:
     from nats.aio.client import Client as NATS
@@ -22,11 +24,13 @@ except ImportError:
 
 NATS_URL = os.environ.get("NATS_URL", "nats://127.0.0.1:4222")
 MEDIA_URL = os.environ.get("MEDIA_URL", "http://127.0.0.1:8080/stream")
+MAIN_SERVER_URL = os.environ.get("MAIN_SERVER_URL", "http://127.0.0.1:8000")
 TOPICS = [
     "cs.vision.control.detected",
     "cs.llm.control.update",
 ]
 MAX_MESSAGES = 100
+INITIAL_LOAD_LIMIT = 20
 
 messages = deque(maxlen=MAX_MESSAGES)
 messages_lock = threading.Lock()
@@ -90,6 +94,7 @@ HTML_TEMPLATE = """
             <div class="footer">
                 <div class="pill">NATS_URL: {{ nats_url }}</div>
                 <div class="pill">MEDIA_URL: {{ media_url }}</div>
+                <div class="pill">MAIN_SERVER: {{ main_server_url }}</div>
             </div>
             <form class="form" method="post" action="/set-media-url">
                 <label for="media_url">MediaMTX 스트림 URL</label>
@@ -137,12 +142,39 @@ def format_message(entry):
 
 
 def append_message(subject, payload):
+    """NATS/API에서 들어온 이벤트를 messages에 추가. event_id 기준 중복 skip."""
+    event_id = payload.get("event_id") if isinstance(payload, dict) else None
     with messages_lock:
+        if event_id:
+            for existing in messages:
+                if isinstance(existing.get("payload"), dict) and existing["payload"].get("event_id") == event_id:
+                    return
         messages.appendleft({
             "subject": subject,
             "payload": payload,
             "received_at": datetime.now().isoformat(),
         })
+
+
+def fetch_initial_events():
+    """앱 시작 시 main-server에서 과거 이벤트(N건) 가져와 messages에 채움."""
+    url = f"{MAIN_SERVER_URL}/events?limit={INITIAL_LOAD_LIMIT}"
+    try:
+        with urllib.request.urlopen(url, timeout=3) as resp:
+            events = json.loads(resp.read().decode("utf-8"))
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+        print(f"[WARN] main-server 과거 이벤트 로드 실패: {exc}")
+        return
+
+    # API는 최신순(occurred_at DESC). 오래된 게 deque 아래쪽으로 가도록 reversed로 appendleft.
+    for event in reversed(events):
+        synthetic_payload = {
+            **event,
+            "source": "history",
+            "timestamp": event.get("occurred_at"),
+        }
+        append_message("api.history.event", synthetic_payload)
+    print(f"[INFO] main-server 과거 이벤트 {len(events)}건 로드 (from {MAIN_SERVER_URL})")
 
 
 async def run_nats_listener():
@@ -218,6 +250,7 @@ def index():
         nats_url=NATS_URL,
         media_url=MEDIA_URL,
         media_url_json=json.dumps(MEDIA_URL),
+        main_server_url=MAIN_SERVER_URL,
         nats_status=nats_status,
         nats_status_detail=nats_status_detail,
     )
@@ -235,8 +268,10 @@ def set_media_url():
 if __name__ == "__main__":
     print("[INFO] dashboard_app 실행 중...")
     print(f"[INFO] NATS_URL={NATS_URL}")
+    print(f"[INFO] MAIN_SERVER_URL={MAIN_SERVER_URL}")
     print(f"[INFO] MEDIA_URL={MEDIA_URL}")
     start_listener_thread()
+    fetch_initial_events()
 
     dashboard_url = "http://127.0.0.1:5001"
     try:
