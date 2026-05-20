@@ -7,7 +7,7 @@ from nats_publisher import publish_message
 
 
 IMAGE_PATH = "test.jpg"
-MODEL_NAME = "ministral-3:latest"
+MODEL_NAME = "llava:7b"
 EVENT_ID = "evt_0001"
 CAMERA_ID = "cam01"
 
