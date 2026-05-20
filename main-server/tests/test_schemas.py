@@ -80,3 +80,22 @@ def test_llm_payload_accepts_model_name_field():
 
     assert payload.data.model_name == "llava:7b"
     assert payload.data.risk_level == "caution"
+
+
+def test_llm_payload_accepts_minimal_documented_shape():
+    payload = LLMPayload.model_validate(
+        {
+            "event_id": "evt_0001",
+            "camera_id": "cam01",
+            "source": "llm",
+            "timestamp": "2026-03-23T15:30:02+09:00",
+            "data": {
+                "model_name": "llava:7b",
+                "summary": "A person appears to be entering the monitored area.",
+            },
+        }
+    )
+
+    assert payload.event_type is None
+    assert payload.data.model_name == "llava:7b"
+    assert payload.data.summary == "A person appears to be entering the monitored area."

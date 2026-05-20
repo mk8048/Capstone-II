@@ -42,7 +42,7 @@ class LLMData(BaseModel):
 class LLMPayload(BaseModel):
     event_id: str
     camera_id: str
-    event_type: str
+    event_type: Optional[str] = None
     source: str
     timestamp: datetime
     data: LLMData

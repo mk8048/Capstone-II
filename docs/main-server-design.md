@@ -64,6 +64,7 @@ Vision 탐지 프레임 저장 판단:
 - 객체가 탐지된 프레임은 Vision Server 책임으로 저장한다.
 - 권장 방식은 이미지 바이너리를 DB에 직접 넣지 않고 MinIO/object storage에 저장한 뒤, Vision Server DB에는 `event_id`, `camera_id`, 저장 object key, 탐지 시각, bbox/object 요약 같은 메타데이터를 남기는 것이다.
 - main-server는 Vision이 NATS payload에 포함한 `data.image_key`를 그대로 `detection_events.image_key`에 저장해 Dashboard/LLM이 동일 프레임을 참조할 수 있게 한다.
+- LLM Server는 Vision Server DB/스토리지의 프레임 URL 또는 object key를 사용해 이미지를 가져온 뒤 분석하고, 분석 결과만 `cs.llm.control.update`로 main-server에 발행한다.
 
 ---
 
@@ -277,6 +278,7 @@ cs.llm.control.update
 
 - `llm_analysis`는 매번 insert한다.
 - 동일 이벤트에 대한 재분석 결과는 누적 저장한다.
+- LLM payload의 `event_type`은 optional이다. 최소 payload는 `event_id`, `camera_id`, `source`, `timestamp`, `data.model_name`, `data.summary`를 포함한다.
 - 부모 `event_id`가 없으면 FK violation을 catch하여 `nak(delay=10s)` 재시도, max deliver 5회 도달 시 DLQ로 보낸다.
 - parent pre-check를 두지 않는 이유: race condition 방지 + 쿼리 1회 절약.
 
