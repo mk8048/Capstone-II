@@ -2,12 +2,14 @@ import json
 import nats
 
 
-async def publish_message(data: dict):
-    nc = await nats.connect("nats://localhost:4222")
+NATS_URL = "nats://localhost:4222"
+SUBJECT = "llm.analysis"
 
-    await nc.publish(
-        "llm.analysis",
-        json.dumps(data, ensure_ascii=False).encode("utf-8")
-    )
 
+async def publish_message(message):
+    nc = await nats.connect(NATS_URL)
+
+    payload = json.dumps(message, ensure_ascii=False).encode("utf-8")
+
+    await nc.publish(SUBJECT, payload)
     await nc.drain()
