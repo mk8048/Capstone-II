@@ -20,6 +20,8 @@ MVP 성공 기준:
 - `GET /events/{event_id}`로 이벤트 상세 조회
 - 서버 종료 시 NATS와 DB 연결을 정상 정리
 
+실시간 영상은 main-server가 직접 중계하지 않는다. Vision Server가 MediaMTX 같은 미디어 게이트웨이에 영상을 publish하고, Dashboard는 WebRTC로 해당 스트림을 재생한다. main-server는 카메라/스트림 메타데이터와 탐지 이벤트 API를 담당한다.
+
 ---
 
 ## 2. 기술 스택
@@ -41,12 +43,27 @@ MVP에서 제외:
 - MinIO presigned URL API
 - REST 기반 이벤트 생성 API
 - `/cameras` API
+- WebRTC media relay 또는 영상 프레임 처리
 
 MinIO 관련 판단:
 
 - Vision/LLM/Dashboard 흐름에서 이미지는 `image_key`로만 참조한다.
 - main-server MVP는 `image_key`를 DB에 저장하고 API 응답에 포함하는 역할만 한다.
 - Dashboard가 실제 이미지 URL을 요구하는 시점에 presigned URL API를 추가한다.
+
+실시간 영상 관련 판단:
+
+- media plane은 MediaMTX가 담당한다.
+- Vision Server는 camera/video input을 읽고 MediaMTX에 stream을 publish한다.
+- Dashboard는 main-server가 제공하는 camera metadata 또는 설정값에서 stream URL/path를 받아 WebRTC로 재생한다.
+- main-server가 WebRTC signaling/media relay를 직접 구현하지 않는다.
+- `cameras.stream_url`은 Dashboard가 재생할 MediaMTX WebRTC URL 또는 stream path를 저장하는 필드로 확장 사용한다.
+
+Vision 탐지 프레임 저장 판단:
+
+- 객체가 탐지된 프레임은 Vision Server 책임으로 저장한다.
+- 권장 방식은 이미지 바이너리를 DB에 직접 넣지 않고 MinIO/object storage에 저장한 뒤, Vision Server DB에는 `event_id`, `camera_id`, 저장 object key, 탐지 시각, bbox/object 요약 같은 메타데이터를 남기는 것이다.
+- main-server는 Vision이 NATS payload에 포함한 `data.image_key`를 그대로 `detection_events.image_key`에 저장해 Dashboard/LLM이 동일 프레임을 참조할 수 있게 한다.
 
 ---
 

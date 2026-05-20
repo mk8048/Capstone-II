@@ -14,6 +14,7 @@
 | Subject 네이밍 | `cs.<source>.<channel>.<action>` |
 | `event_id` | Vision 탐지부터 LLM 분석까지 **동일 ID 유지** |
 | `source` | 메시지 발행 서버 이름 (`vision`, `llm`) |
+| 탐지 프레임 | Vision Server가 저장하고, NATS에는 참조용 `image_key`만 포함 |
 
 ---
 
@@ -30,6 +31,7 @@
 
 Vision Server가 객체를 탐지하면 발행한다.
 한 프레임에서 여러 객체가 탐지될 수 있으므로 `objects`는 배열로 전송한다.
+객체가 탐지된 프레임은 Vision Server가 자체 DB/스토리지에 저장하고, Main Server와 LLM Server는 `data.image_key`로 같은 프레임을 참조한다.
 
 ```json
 {
@@ -71,7 +73,7 @@ Vision Server가 객체를 탐지하면 발행한다.
 | `timestamp` | string (ISO 8601 +09:00) | 탐지 발생 시각 |
 | `data.object_count` | int | 탐지 객체 수 |
 | `data.max_confidence` | float | 최고 confidence (0.0 ~ 1.0) |
-| `data.image_key` | string | MinIO object key (예: `events/evt_0001/thumb.jpg`) |
+| `data.image_key` | string | Vision Server가 저장한 탐지 프레임의 MinIO/object key (예: `events/evt_0001/thumb.jpg`) |
 | `data.objects[].class_name` | string | `person`, `car`, `bag` 등 |
 | `data.objects[].confidence` | float | 0.0 ~ 1.0 |
 | `data.objects[].bbox` | int[4] | `[x, y, width, height]` |
@@ -132,4 +134,5 @@ LLM Server가 이미지 분석을 완료하면 발행한다.
 
 | 날짜 | 변경 내용 |
 |------|----------|
+| 2026-05-20 | Vision Server가 탐지 프레임을 저장하고 NATS에는 `image_key` 참조만 싣는 계약 명시. |
 | 2026-05-13 | 초안 확정. `image_url` → `image_key`로 변경 (object key만 저장). `data.objects` 배열 구조 도입. |
