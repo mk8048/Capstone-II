@@ -70,9 +70,11 @@ winget install -e --id bluenviron.mediamtx
 
 ### 3.4 VM 인프라 (SSH 터널 필요)
 
-main-server 담당자에게 받음:
+main-server 담당자에게 받음 / 확인:
 - VM IP, SSH 키 (`keypairsw.pem`)
 - MinIO password (= `.env`의 `MINIO_SECRET_KEY`)
+- **MinIO bucket `capstone2` 사전 생성 확인** (없으면 첫 frame 업로드 시 `NoSuchBucket` 에러)
+- **Postgres `cameras` 테이블에 `<CAMERA_ID>` row 등록 확인** (미등록이면 Main Server가 NAK 5회 후 DLQ로 보냄. 현재 `cam01`은 등록됨)
 
 ```powershell
 # SSH 터널 — NATS(4222) + MinIO(9000)
