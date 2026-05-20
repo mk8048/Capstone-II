@@ -394,6 +394,7 @@ nc -zv localhost 4222
 ## 12-3. PostgreSQL 접속
 
 ```bash
+sudo apt install -y postgresql-client # psql 설치
 psql -h localhost -p 5432 -U capstone2 -d capstone2 -c "\dt"
 # 비밀번호 입력
 ```
@@ -580,13 +581,13 @@ vi ~/.bashrc
 ```
 
 파일 맨 아래에 `i`로 입력 모드 진입 후 붙여넣는다.
-
-​```bash
+​
+```bash
 parse_git_branch() {
     git branch 2>/dev/null | grep '^*' | sed 's/* //'
 }
-PS1='\u@\h:\w\[\033[33m\] $(parse_git_branch)\[\033[0m\]\$ '
-​```
+PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[33m\] $(parse_git_branch)\[\033[00m\]\$ '
+```
 
 저장: `Esc` → `:wq`
 

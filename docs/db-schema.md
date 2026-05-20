@@ -30,7 +30,7 @@ cameras (1) ──┐
 | 시간 컬럼 | `TIMESTAMPTZ` (KST `+09:00` 저장) |
 | bbox 저장 | `bbox_x, bbox_y, bbox_width, bbox_height` 분리 컬럼 |
 | `track_id` | NULL 허용 (MVP에서는 미사용) |
-| 이미지 참조 | MinIO **object key**만 저장 (URL 아님) |
+| 이미지 참조 | Vision Server가 저장한 탐지 프레임의 MinIO/object key만 저장 (URL 아님) |
 | 확장 필드 | `extra` / `raw_response` 컬럼에 `JSONB`로 저장 |
 
 ---
@@ -44,7 +44,7 @@ cameras (1) ──┐
 | `camera_id` | `VARCHAR(64)` | PK | 카메라 ID (예: `cam01`) |
 | `name` | `VARCHAR(128)` | NOT NULL | 카메라 이름 |
 | `location` | `VARCHAR(256)` | | 설치 위치 |
-| `stream_url` | `VARCHAR(512)` | | RTSP URL 또는 영상 파일 경로 |
+| `stream_url` | `VARCHAR(512)` | | Dashboard 재생용 MediaMTX WebRTC URL/path 또는 원본 RTSP URL |
 | `is_active` | `BOOLEAN` | NOT NULL, DEFAULT TRUE | 활성 여부 |
 | `created_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT NOW() | 등록 시각 |
 
@@ -60,7 +60,7 @@ Vision 서버가 발행한 탐지 이벤트.
 | `camera_id` | `VARCHAR(64)` | FK → cameras | 카메라 ID |
 | `occurred_at` | `TIMESTAMPTZ` | NOT NULL | 탐지 발생 시각 |
 | `event_type` | `VARCHAR(64)` | NOT NULL | `person_detected`, `intrusion`, `loitering` 등 |
-| `image_key` | `VARCHAR(512)` | | MinIO object key (예: `events/evt_0001/thumb.jpg`) |
+| `image_key` | `VARCHAR(512)` | | Vision Server가 저장한 탐지 프레임의 MinIO/object key (예: `events/evt_0001/thumb.jpg`) |
 | `object_count` | `INTEGER` | NOT NULL, DEFAULT 0 | 탐지 객체 수 |
 | `max_confidence` | `REAL` | | 최고 confidence |
 | `status` | `VARCHAR(32)` | NOT NULL, DEFAULT `'created'` | `created` / `analyzed` / `failed` |
@@ -163,6 +163,7 @@ ORDER BY occurred_at ASC;
 | `zones` | 위험 구역 polygon 정의 |
 | `tracks` | 객체 추적 trajectory |
 | `event_summaries` | 시간대별 통계 |
+| Vision Server 소유 `detected_frames` | 탐지 프레임 저장 메타데이터. 이미지 바이너리는 MinIO/object storage에 두고 DB에는 object key와 object/bbox 요약 저장 권장 |
 
 이 테이블들은 MVP 완료 후 Alembic 마이그레이션으로 추가한다.
 
@@ -172,4 +173,5 @@ ORDER BY occurred_at ASC;
 
 | 날짜 | 변경 내용 |
 |------|----------|
+| 2026-05-20 | 실시간 스트림 URL 의미와 Vision Server 탐지 프레임 저장 책임 명시. |
 | 2026-05-13 | 초안 확정. `image_url` → `image_key`로 변경. |
