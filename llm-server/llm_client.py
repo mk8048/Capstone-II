@@ -1,37 +1,39 @@
 import base64
 import requests
 
+
 OLLAMA_URL = "http://localhost:11434/api/generate"
-MODEL_NAME = "ministral-3:latest"
 
 
-def analyze_image(image_path: str) -> str:
-    with open(image_path, "rb") as f:
-        image_base64 = base64.b64encode(f.read()).decode("utf-8")
+def encode_image_to_base64(image_path):
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode("utf-8")
 
-    payload = {
-        "model": MODEL_NAME,
-        "prompt": """
-이미지를 분석해서 한국어로 답해줘.
 
-반드시 JSON 형식으로만 출력해.
+def analyze_image(image_path, model_name="llava:7b"):
+    image_base64 = encode_image_to_base64(image_path)
 
-{
-  "summary": "이미지 상황 요약",
-  "objects": ["주요 객체1", "주요 객체2"],
-  "risk_level": "low 또는 medium 또는 high",
-  "risk_reason": "위험 판단 이유"
-}
-""",
-        "images": [image_base64],
-        "stream": False
-    }
+    prompt = """
+이미지를 분석해서 상황을 한 문장으로 요약해줘.
+응답은 설명만 자연어로 작성해줘.
+도로 위 흰색 줄무늬가 보이면 '보도부'가 아니라 '횡단보도'라고 표현해.
+JSON 형식으로 쓰지 마.
+"""
 
-    response = requests.post(OLLAMA_URL, json=payload)
+    response = requests.post(
+        OLLAMA_URL,
+        json={
+            "model": model_name,
+            "prompt": prompt,
+            "images": [image_base64],
+            "stream": False
+        },
+        timeout=120
+    )
 
-    if response.status_code != 200:
-        print("Ollama 오류 상태코드:", response.status_code)
-        print("Ollama 오류 내용:", response.text)
-        raise Exception("Ollama 요청 실패")
+    response.raise_for_status()
 
-    return response.json().get("response", "")
+    result = response.json()
+    summary = result.get("response", "").strip()
+
+    return summary
