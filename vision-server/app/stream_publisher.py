@@ -54,13 +54,14 @@ class FfmpegRtspPublisher:
 
         cmd = [
             self.ffmpeg_path,
-            "-loglevel", "warning",
+            "-loglevel", "info",
             "-f", "rawvideo",
             "-pix_fmt", "bgr24",
             "-s", f"{self.stream_width}x{self.stream_height}",
             "-r", str(self.fps),
             "-i", "pipe:0",
             "-c:v", "libx264",
+            "-pix_fmt", "yuv420p",
             "-preset", "ultrafast",
             "-tune", "zerolatency",
             "-g", str(self.fps * 2),
@@ -93,7 +94,7 @@ class FfmpegRtspPublisher:
                 self.alive = False
                 return False
         try:
-            if self.resize and (frame.shape[1] != self.stream_width or frame.shape[0] != self.stream_height):
+            if frame.shape[1] != self.stream_width or frame.shape[0] != self.stream_height:
                 frame = cv2.resize(frame, (self.stream_width, self.stream_height))
             self.proc.stdin.write(frame.tobytes())
             return True

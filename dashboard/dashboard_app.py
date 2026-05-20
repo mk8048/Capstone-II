@@ -23,7 +23,7 @@ except ImportError:
 # -----------------------------
 
 NATS_URL = os.environ.get("NATS_URL", "nats://127.0.0.1:4222")
-MEDIA_URL = os.environ.get("MEDIA_URL", "http://127.0.0.1:8080/stream")
+MEDIA_URL = os.environ.get("MEDIA_URL", "http://127.0.0.1:8889/cam01/")
 MAIN_SERVER_URL = os.environ.get("MAIN_SERVER_URL", "http://127.0.0.1:8000")
 TOPICS = [
     "cs.vision.control.detected",
@@ -86,11 +86,14 @@ HTML_TEMPLATE = """
         <section class="card">
             <h2>MediaMTX 스트림</h2>
             <div class="video-box">
-                <video id="media-video" controls muted playsinline preload="none">
-                    <p>현재 브라우저에서 직접 재생할 수 없는 스트림입니다. URL을 복사해 외부 플레이어나 WebRTC 클라이언트에서 확인하세요.</p>
-                </video>
+                <iframe
+                    id="media-iframe"
+                    src="{{ media_url }}"
+                    allow="autoplay; fullscreen"
+                    referrerpolicy="no-referrer"
+                ></iframe>
             </div>
-            <button type="button" class="secondary" onclick="loadMediaStream()">스트림 불러오기</button>
+            <button type="button" class="secondary" onclick="loadMediaStream()">스트림 다시 불러오기</button>
             <div class="footer">
                 <div class="pill">NATS_URL: {{ nats_url }}</div>
                 <div class="pill">MEDIA_URL: {{ media_url }}</div>
@@ -108,7 +111,7 @@ HTML_TEMPLATE = """
     </div>
     <script>
         function loadMediaStream() {
-            const video = document.getElementById("media-video");
+            const iframe = document.getElementById("media-iframe");
             const mediaUrl = {{ media_url_json|safe }};
 
             if (!mediaUrl) {
@@ -116,11 +119,9 @@ HTML_TEMPLATE = """
                 return;
             }
 
-            video.src = mediaUrl;
-            video.load();
-            video.play().catch(() => {
-                // The browser may require a second click or reject unsupported stream formats.
-            });
+            // Cache-bust by re-assigning the same src; iframe forces a reload.
+            iframe.src = "about:blank";
+            setTimeout(() => { iframe.src = mediaUrl; }, 50);
         }
     </script>
 </body>
