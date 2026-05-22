@@ -159,3 +159,6 @@ python dashboard/send_nats_test.py
 - 카메라 위치 정보를 환경 변수 대신 main-server 또는 설정 파일에서 관리
 - bbox 좌표 기준 이미지 해상도 설정 추가
 - main-server `/events` DB 조회 오류 해결 후 과거 이벤트 로드 재연동
+
+- <img width="2878" height="1506" alt="image" src="https://github.com/user-attachments/assets/8e0a4f48-528d-4fe0-b20a-8bb48ddcf76f" />
+
