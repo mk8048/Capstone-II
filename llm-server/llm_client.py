@@ -1,4 +1,5 @@
 import base64
+import json
 import requests
 
 
@@ -10,15 +11,40 @@ def encode_image_to_base64(image_path):
         return base64.b64encode(image_file.read()).decode("utf-8")
 
 
+def clean_summary(text):
+    text = text.strip()
+
+    # LLaVA가 JSON처럼 답했을 때 처리
+    try:
+        parsed = json.loads(text)
+
+        if isinstance(parsed, dict):
+            if "summary" in parsed:
+                return parsed["summary"]
+            if "상황" in parsed:
+                return parsed["상황"]
+
+        return str(parsed)
+
+    except json.JSONDecodeError:
+        return text
+
+
 def analyze_image(image_path, model_name="llava:7b"):
     image_base64 = encode_image_to_base64(image_path)
 
     prompt = """
-이미지를 분석해서 상황을 한 문장으로 요약해줘.
-응답은 설명만 자연어로 작성해줘.
-도로 위 흰색 줄무늬가 보이면 '보도부'가 아니라 '횡단보도'라고 표현해.
-JSON 형식으로 쓰지 마.
-"""
+    Analyze the image and describe the situation in one natural English sentence.
+
+    Rules:
+    - Output only one sentence
+    - Do not use JSON
+    - Do not use braces {}
+    - Do not list items
+    - Do not guess locations or city names
+    - Describe only visible people, vehicles, and road situations
+    - If crosswalk lines are visible, use the word "crosswalk"
+    """
 
     response = requests.post(
         OLLAMA_URL,
@@ -34,6 +60,8 @@ JSON 형식으로 쓰지 마.
     response.raise_for_status()
 
     result = response.json()
-    summary = result.get("response", "").strip()
+    raw_summary = result.get("response", "").strip()
+
+    summary = clean_summary(raw_summary)
 
     return summary
