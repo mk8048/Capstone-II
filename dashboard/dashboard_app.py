@@ -4,6 +4,8 @@ import json
 import os
 import threading
 import time
+import urllib.error
+import urllib.request
 import webbrowser
 from collections import deque
 from datetime import datetime
@@ -18,11 +20,13 @@ except ImportError:
 
 NATS_URL = os.environ.get("NATS_URL", "nats://127.0.0.1:4222")
 MEDIA_URL = os.environ.get("MEDIA_URL", "http://127.0.0.1:8889/cam01/")
+MAIN_SERVER_URL = os.environ.get("MAIN_SERVER_URL", "http://127.0.0.1:8000")
 TOPICS = [
     "cs.vision.control.detected",
     "cs.llm.control.update",
 ]
 MAX_EVENTS = 100
+INITIAL_LOAD_LIMIT = 20
 DEFAULT_CAMERA_LOCATIONS = {
     "cam01": "Lab Entrance",
 }
@@ -94,6 +98,7 @@ HTML_TEMPLATE = """
             <span class="pill" id="nats-status-detail">{{ nats_status_detail }}</span>
             <span class="pill">NATS_URL: {{ nats_url }}</span>
             <span class="pill">MEDIA_URL: {{ media_url }}</span>
+            <span class="pill">MAIN_SERVER: {{ main_server_url }}</span>
         </div>
     </header>
 
@@ -385,6 +390,38 @@ def update_event(subject, payload):
         return event
 
 
+def fetch_initial_events():
+    """앱 시작 시 main-server에서 과거 이벤트(N건)를 가져와 events에 채운다.
+
+    main-server `/events`는 EventSummary 목록(최신순)을 반환한다. 객체 상세/LLM 요약
+    텍스트는 포함되지 않으므로 카메라/시간/confidence/image_key 위주로 채우고,
+    이후 같은 event_id의 라이브 NATS 메시지가 들어오면 update_event가 보강한다.
+    """
+    url = f"{MAIN_SERVER_URL}/events?limit={INITIAL_LOAD_LIMIT}"
+    try:
+        with urllib.request.urlopen(url, timeout=3) as resp:
+            api_events = json.loads(resp.read().decode("utf-8"))
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+        print(f"[WARN] main-server 과거 이벤트 로드 실패: {exc}")
+        return
+
+    # API는 최신순(occurred_at DESC). 오래된 것부터 흘려보내야 최신이 목록 위로 온다.
+    for event in reversed(api_events):
+        synthetic_payload = {
+            "event_id": event.get("event_id"),
+            "camera_id": event.get("camera_id"),
+            "timestamp": event.get("occurred_at"),
+            "data": {
+                "object_count": event.get("object_count"),
+                "max_confidence": event.get("max_confidence"),
+                "image_key": event.get("image_key"),
+                "objects": [],
+            },
+        }
+        update_event("api.history.event", synthetic_payload)
+    print(f"[INFO] main-server 과거 이벤트 {len(api_events)}건 로드 (from {MAIN_SERVER_URL})")
+
+
 async def run_nats_listener():
     global nats_status, nats_status_detail
 
@@ -451,6 +488,7 @@ def index():
         nats_url=NATS_URL,
         media_url=MEDIA_URL,
         media_url_json=json.dumps(MEDIA_URL),
+        main_server_url=MAIN_SERVER_URL,
         nats_status=nats_status,
         nats_status_detail=nats_status_detail,
     )
@@ -483,8 +521,10 @@ def set_media_url():
 if __name__ == "__main__":
     print("[INFO] dashboard_app running...")
     print(f"[INFO] NATS_URL={NATS_URL}")
+    print(f"[INFO] MAIN_SERVER_URL={MAIN_SERVER_URL}")
     print(f"[INFO] MEDIA_URL={MEDIA_URL}")
     start_listener_thread()
+    fetch_initial_events()
 
     dashboard_url = "http://127.0.0.1:5001"
     try:
