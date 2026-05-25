@@ -44,6 +44,39 @@ if ($env:FFMPEG_PATH) {
     Write-Host "[start] FFMPEG_PATH=$($env:FFMPEG_PATH)"
 }
 
+# --- 2c. SSH 터널 확인 (NATS 4222 / MinIO 9000) ---
+# NATS / MinIO는 main-server(VM)에 떠 있고, 이 PC는 SSH 터널로 포워딩해서 붙는다.
+# 포트가 안 잡혀 있으면 자동으로 터널을 올린다.
+$tunnelHost = "ubuntu@210.109.82.57"
+$tunnelKey  = "C:\projects\.ssh\keypairsw.pem"
+
+$natsUp  = Test-NetConnection 127.0.0.1 -Port 4222 -InformationLevel Quiet -WarningAction SilentlyContinue
+$minioUp = Test-NetConnection 127.0.0.1 -Port 9000 -InformationLevel Quiet -WarningAction SilentlyContinue
+if ($natsUp -and $minioUp) {
+    Write-Host "[start] SSH tunnel already up (NATS 4222 / MinIO 9000)"
+} else {
+    if (-not (Test-Path $tunnelKey)) {
+        Write-Warning "[start] SSH key not found at $tunnelKey; NATS/MinIO will be unavailable"
+    } else {
+        Write-Host "[start] SSH tunnel down; establishing -> $tunnelHost ..."
+        # -fN: 인증 후 백그라운드로 포크하고 명령 안 실행. accept-new: 첫 접속 시 호스트키 자동 신뢰(프롬프트 방지)
+        ssh -fN -L 4222:localhost:4222 -L 9000:localhost:9000 $tunnelHost -i $tunnelKey `
+            -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10
+        # 포트 올라올 때까지 대기 (최대 5초)
+        for ($i = 0; $i -lt 10; $i++) {
+            Start-Sleep -Milliseconds 500
+            $natsUp  = Test-NetConnection 127.0.0.1 -Port 4222 -InformationLevel Quiet -WarningAction SilentlyContinue
+            $minioUp = Test-NetConnection 127.0.0.1 -Port 9000 -InformationLevel Quiet -WarningAction SilentlyContinue
+            if ($natsUp -and $minioUp) { break }
+        }
+        if ($natsUp -and $minioUp) {
+            Write-Host "[start] SSH tunnel ready (NATS 4222 / MinIO 9000)"
+        } else {
+            Write-Warning "[start] tunnel ports not up after 5s (NATS=$natsUp MinIO=$minioUp); continuing (RTSP stream still works)"
+        }
+    }
+}
+
 # --- 3. 기존 MediaMTX 있으면 정리 ---
 $existing = Get-Process mediamtx -ErrorAction SilentlyContinue
 if ($existing) {
