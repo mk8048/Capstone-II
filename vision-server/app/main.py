@@ -44,12 +44,17 @@ async def run() -> None:
             width=settings.stream_width,
             height=settings.stream_height,
         )
+        # AI 스트림 ffmpeg 로그는 원본과 다른 파일로 (단, .log로 끝나게 해서 .gitignore의 *.log가 잡도록)
+        ai_log_path = ""
+        if settings.ffmpeg_log_path:
+            base = settings.ffmpeg_log_path
+            ai_log_path = (base[:-4] if base.endswith(".log") else base) + ".ai.log"
         stream_publisher_ai = FfmpegRtspPublisher(
             rtsp_url=settings.mediamtx_rtsp_url_ai,
             fps=settings.stream_fps,
             bitrate=settings.stream_bitrate,
             ffmpeg_path=settings.ffmpeg_path,
-            log_path=(settings.ffmpeg_log_path + ".ai" if settings.ffmpeg_log_path else ""),
+            log_path=ai_log_path,
             width=settings.stream_width,
             height=settings.stream_height,
         )
