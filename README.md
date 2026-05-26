@@ -36,13 +36,20 @@
 
 기술 스택:
 
-- YOLOv8, OpenCV, FFmpeg, MediaMTX
-- Ollama, LLaVA
-- NATS JetStream
-- MinIO
-- PostgreSQL
-- FastAPI
-- Flask
+![YOLOv8](https://img.shields.io/badge/YOLOv8-111F68?style=for-the-badge)
+![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white)
+![FFmpeg](https://img.shields.io/badge/FFmpeg-007808?style=for-the-badge&logo=ffmpeg&logoColor=white)
+![MediaMTX](https://img.shields.io/badge/MediaMTX-2D2D2D?style=for-the-badge)
+
+![Ollama](https://img.shields.io/badge/Ollama-000000?style=for-the-badge&logo=ollama&logoColor=white)
+![LLaVA](https://img.shields.io/badge/LLaVA-FF6F00?style=for-the-badge)
+
+![NATS](https://img.shields.io/badge/NATS%20JetStream-27AAE1?style=for-the-badge&logo=natsdotio&logoColor=white)
+![MinIO](https://img.shields.io/badge/MinIO-C72E49?style=for-the-badge&logo=minio&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
+
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![Flask](https://img.shields.io/badge/Flask-000000?style=for-the-badge&logo=flask&logoColor=white)
 
 ---
 
@@ -143,3 +150,14 @@ capstone-ii/
 | [llm-server/README.md](llm-server/README.md) | LLM Server 실행/운영 |
 | [main-server/README.md](main-server/README.md) | Main Server 실행/운영 |
 | [dashboard/README.md](dashboard/README.md) | Dashboard 실행/운영 |
+
+---
+
+## 8. 구성원
+
+| Name | Position | Git |
+|------|----------|-----|
+| 이민기 | PM, Main Server 개발 | https://github.com/mk8048 |
+| 김가영 | LLM Server 개발 | |
+| 이병철 | Vision Server 개발 | |
+| 이하늘 | Dashboard 개발 | |
