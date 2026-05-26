@@ -73,18 +73,52 @@ if ($natsUp -and $minioUp) {
     }
 }
 
-# --- 4. Ollama 확인 (11434) ---
+# --- 4. Ollama 확인/기동 (11434) ---
+# 이미 떠 있으면 그대로 쓰고(종료 시 안 건드림), 없으면 이 스크립트가 띄운다.
+# $ollamaProc 가 채워지면 = 우리가 띄운 것 → 서버 종료 시 같이 정리.
+$ollamaProc = $null
 $ollamaUp = Test-NetConnection 127.0.0.1 -Port 11434 -InformationLevel Quiet -WarningAction SilentlyContinue
 if ($ollamaUp) {
-    Write-Host "[start] Ollama up (11434)"
+    Write-Host "[start] Ollama already up (11434) — leaving it running on exit"
 } else {
-    Write-Warning "[start] Ollama not reachable on 11434. Start it: ollama serve  (and: ollama pull llava:7b)"
+    $ollamaCmd = Get-Command ollama -ErrorAction SilentlyContinue
+    if ($ollamaCmd) {
+        $ollamaExe = $ollamaCmd.Source
+    } else {
+        $ollamaExe = "$env:LOCALAPPDATA\Programs\Ollama\ollama.exe"
+    }
+    if (-not (Test-Path $ollamaExe)) {
+        Write-Warning "[start] ollama not found ($ollamaExe). Install Ollama, then: ollama pull llava:7b"
+    } else {
+        Write-Host "[start] Ollama not up; starting 'ollama serve'..."
+        $ollamaProc = Start-Process $ollamaExe -ArgumentList 'serve' -WindowStyle Hidden -PassThru
+        for ($i = 0; $i -lt 20; $i++) {
+            Start-Sleep -Milliseconds 500
+            if (Test-NetConnection 127.0.0.1 -Port 11434 -InformationLevel Quiet -WarningAction SilentlyContinue) { break }
+        }
+        if (Test-NetConnection 127.0.0.1 -Port 11434 -InformationLevel Quiet -WarningAction SilentlyContinue) {
+            Write-Host "[start] Ollama ready (PID=$($ollamaProc.Id))"
+        } else {
+            Write-Warning "[start] Ollama not ready after 10s; continuing anyway"
+        }
+    }
 }
 
-# --- 5. LLM Server foreground 실행 ---
+# --- 5. LLM Server foreground 실행 + 정리 ---
 # 주의: main-server가 먼저 떠 있어야 JetStream stream(CAPSTONE_EVENTS)이 존재한다.
 #       없으면 LLM Server가 stream 생길 때까지 3초마다 재시도한다.
+# SSH 터널(NATS/MinIO)은 공유 인프라라 종료 시 그대로 둔다.
 Write-Host ""
 Write-Host "[start] starting LLM Server (Ctrl+C to stop)"
 Write-Host ""
-& $pythonPath -u main.py
+try {
+    & $pythonPath -u main.py
+} finally {
+    # 이 스크립트가 띄운 Ollama만 정리 (기존에 떠 있던 건 안 건드림)
+    if ($ollamaProc -and -not $ollamaProc.HasExited) {
+        Write-Host ""
+        Write-Host "[start] stopping Ollama (PID=$($ollamaProc.Id)) started by this script..."
+        Stop-Process -Id $ollamaProc.Id -Force -ErrorAction SilentlyContinue
+    }
+    Write-Host "[start] done"
+}

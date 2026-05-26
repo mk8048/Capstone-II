@@ -1,13 +1,25 @@
-# vision-server/start.ps1
+# vision-server/vision_start.ps1
 # 한 번에 MediaMTX + Vision Server 띄우는 헬퍼.
 # Ctrl+C로 Vision Server 종료 시 MediaMTX도 같이 정리한다.
 #
-# 사용: PowerShell에서 `.\start.ps1`
-# (실행 정책 막히면: `powershell -ExecutionPolicy Bypass -File .\start.ps1`)
+# 사용: PowerShell에서 `.\vision_start.ps1`
+# (실행 정책 막히면: `powershell -ExecutionPolicy Bypass -File .\vision_start.ps1`)
 
 $ErrorActionPreference = "Stop"
 $scriptDir = $PSScriptRoot
 Set-Location $scriptDir
+
+# --- 0. 이미 실행 중이면 중복 실행 방지 ---
+# `python ... -m app.main` 프로세스가 있으면 두 번째 인스턴스를 띄우지 않는다.
+# (카메라 단일 점유 + 중복 NATS 발행/MinIO 업로드 방지)
+$existing = Get-CimInstance Win32_Process -Filter "Name='python.exe'" -ErrorAction SilentlyContinue |
+    Where-Object { $_.CommandLine -match 'app\.main' }
+if ($existing) {
+    $pids = ($existing.ProcessId) -join ', '
+    Write-Warning "[start] Vision Server already running (PID=$pids). Not starting a second instance."
+    Write-Host "[start] To restart: Stop-Process -Id $pids -Force; then run this script again."
+    exit 0
+}
 
 # --- 1. MediaMTX 바이너리 위치 (winget 기본 경로 fallback) ---
 $mediamtxCmd = Get-Command mediamtx -ErrorAction SilentlyContinue

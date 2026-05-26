@@ -207,7 +207,7 @@ ss -tlnp | grep -E ':(5432|4222)\s'
 ### 4-2. main-server + dashboard 시작 (한 번에)
 
 ```bash
-./scripts/start.sh
+./scripts/main_start.sh
 ```
 
 동작:
@@ -227,7 +227,7 @@ ss -tlnp | grep -E ':(5432|4222)\s'
 ### 4-3. 종료
 
 ```bash
-./scripts/stop.sh
+./scripts/main_stop.sh
 ```
 
 SSH 터널은 별도:
@@ -340,10 +340,10 @@ cd main-server
 ```bash
 # 시작
 ssh -fN capstone-vm
-./scripts/start.sh
+./scripts/main_start.sh
 
 # 중지
-./scripts/stop.sh
+./scripts/main_stop.sh
 pkill -f "ssh -fN capstone-vm"
 
 # 상태 확인
