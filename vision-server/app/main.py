@@ -33,6 +33,7 @@ async def run() -> None:
     publisher = NatsPublisher(settings.nats_url, settings.nats_subject)
 
     stream_publisher: FfmpegRtspPublisher | None = None
+    stream_publisher_ai: FfmpegRtspPublisher | None = None
     if settings.stream_enabled:
         stream_publisher = FfmpegRtspPublisher(
             rtsp_url=settings.mediamtx_rtsp_url,
@@ -43,6 +44,15 @@ async def run() -> None:
             width=settings.stream_width,
             height=settings.stream_height,
         )
+        stream_publisher_ai = FfmpegRtspPublisher(
+            rtsp_url=settings.mediamtx_rtsp_url_ai,
+            fps=settings.stream_fps,
+            bitrate=settings.stream_bitrate,
+            ffmpeg_path=settings.ffmpeg_path,
+            log_path=(settings.ffmpeg_log_path + ".ai" if settings.ffmpeg_log_path else ""),
+            width=settings.stream_width,
+            height=settings.stream_height,
+        )
 
     last_publish_ts = 0.0
     try:
@@ -50,7 +60,10 @@ async def run() -> None:
         print(f"[vision] nats connected url={settings.nats_url} subject={settings.nats_subject}")
         print(f"[vision] minio target endpoint={settings.minio_endpoint} bucket={settings.minio_bucket}")
         if stream_publisher is not None:
-            print(f"[vision] stream enabled rtsp={settings.mediamtx_rtsp_url} overlay={settings.stream_overlay}")
+            print(
+                f"[vision] stream enabled raw={settings.mediamtx_rtsp_url} "
+                f"ai={settings.mediamtx_rtsp_url_ai} overlay={settings.stream_overlay}"
+            )
         else:
             print("[vision] stream disabled")
         while True:
@@ -61,13 +74,17 @@ async def run() -> None:
 
             persons = await asyncio.to_thread(detector.detect_persons, frame)
 
+            # raw stream (cam01): always clean frame
             if stream_publisher is not None and stream_publisher.alive:
+                await asyncio.to_thread(stream_publisher.write, frame)
+            # AI stream (cam01_ai): bbox overlay drawn when persons present
+            if stream_publisher_ai is not None and stream_publisher_ai.alive:
                 if settings.stream_overlay and persons:
-                    stream_frame = frame.copy()
-                    draw_overlay(stream_frame, persons)
+                    ai_frame = frame.copy()
+                    draw_overlay(ai_frame, persons)
                 else:
-                    stream_frame = frame
-                await asyncio.to_thread(stream_publisher.write, stream_frame)
+                    ai_frame = frame
+                await asyncio.to_thread(stream_publisher_ai.write, ai_frame)
 
             if not persons:
                 continue
@@ -99,6 +116,8 @@ async def run() -> None:
         await publisher.close()
         if stream_publisher is not None:
             stream_publisher.close()
+        if stream_publisher_ai is not None:
+            stream_publisher_ai.close()
         print("[vision] shutdown complete")
 
 

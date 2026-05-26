@@ -25,6 +25,7 @@ class Settings:
     minio_secure: bool
     stream_enabled: bool
     mediamtx_rtsp_url: str
+    mediamtx_rtsp_url_ai: str
     stream_fps: int
     stream_width: int
     stream_height: int
@@ -55,6 +56,7 @@ def load_settings() -> Settings:
         minio_secure=_to_bool(os.getenv("MINIO_SECURE", "false")),
         stream_enabled=_to_bool(os.getenv("STREAM_ENABLED", "false")),
         mediamtx_rtsp_url=os.getenv("MEDIAMTX_RTSP_URL", "rtsp://127.0.0.1:8554/cam01"),
+        mediamtx_rtsp_url_ai=os.getenv("MEDIAMTX_RTSP_URL_AI", "rtsp://127.0.0.1:8554/cam01_ai"),
         stream_fps=int(os.getenv("STREAM_FPS", "30")),
         stream_width=int(os.getenv("STREAM_WIDTH", "0")),
         stream_height=int(os.getenv("STREAM_HEIGHT", "0")),

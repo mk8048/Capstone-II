@@ -80,7 +80,9 @@ HTML_TEMPLATE = """
         .ok { color: #86efac; }
         .container { display: grid; grid-template-columns: minmax(420px, 1fr) minmax(420px, 0.95fr); gap: 20px; padding: 20px; }
         .card { background: #1f2937; border: 1px solid #334155; border-radius: 12px; padding: 18px; box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.05); }
-        .video-box { width: 100%; border-radius: 10px; border: 1px solid #334155; overflow: hidden; background: #020617; aspect-ratio: 16 / 9; }
+        .video-box { position: relative; width: 100%; border-radius: 10px; border: 1px solid #334155; overflow: hidden; background: #020617; aspect-ratio: 16 / 9; }
+        .mode-toggle { position: absolute; right: 10px; bottom: 10px; width: auto; margin: 0; padding: 6px 12px; border-radius: 999px; background: rgba(37, 99, 235, 0.85); color: #fff; font-size: 0.82rem; font-weight: 700; cursor: pointer; z-index: 2; }
+        .mode-toggle.ai { background: rgba(245, 158, 11, 0.9); }
         iframe { width: 100%; height: 100%; border: 0; background: #020617; display: block; }
         button { width: 100%; margin-top: 12px; padding: 11px 14px; border: 0; border-radius: 8px; background: #2563eb; color: white; font-weight: 700; cursor: pointer; }
         button.secondary { background: #475569; }
@@ -127,6 +129,7 @@ HTML_TEMPLATE = """
             <h2>카메라 영상</h2>
             <div class="video-box">
                 <iframe id="media-iframe" src="about:blank" allow="autoplay; fullscreen" referrerpolicy="no-referrer"></iframe>
+                <button type="button" id="mode-toggle" class="mode-toggle" onclick="toggleMode()">원본 영상</button>
             </div>
             <button type="button" onclick="loadMediaStream()">영상 불러오기</button>
             <form class="form" method="post" action="/set-media-url">
@@ -150,14 +153,40 @@ HTML_TEMPLATE = """
         const MEDIA_URL = {{ media_url_json|safe }};
         const POLL_INTERVAL_MS = 3000;
 
+        // false = 원본(박스 X, cam01), true = AI(박스 O, cam01_ai)
+        let aiMode = false;
+
+        // http://host:8889/cam01/  ->  http://host:8889/cam01_ai/
+        function aiUrlFrom(url) {
+            const base = url.endsWith("/") ? url.slice(0, -1) : url;
+            return base + "_ai/";
+        }
+
+        function currentMediaUrl() {
+            return aiMode ? aiUrlFrom(MEDIA_URL) : MEDIA_URL;
+        }
+
+        function toggleMode() {
+            aiMode = !aiMode;
+            const btn = document.getElementById("mode-toggle");
+            btn.textContent = aiMode ? "AI 영상" : "원본 영상";
+            btn.classList.toggle("ai", aiMode);
+            const iframe = document.getElementById("media-iframe");
+            // 이미 영상이 떠 있으면 새 모드로 다시 로드
+            if (iframe.src && iframe.src !== "about:blank") {
+                loadMediaStream();
+            }
+        }
+
         function loadMediaStream() {
             const iframe = document.getElementById("media-iframe");
             if (!MEDIA_URL) {
                 alert("MediaMTX 스트림 URL을 먼저 입력하세요.");
                 return;
             }
+            const url = currentMediaUrl();
             iframe.src = "about:blank";
-            setTimeout(() => { iframe.src = MEDIA_URL; }, 50);
+            setTimeout(() => { iframe.src = url; }, 50);
         }
 
         function escapeHtml(value) {
