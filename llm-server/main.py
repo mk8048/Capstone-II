@@ -1,40 +1,64 @@
+"""LLM Server entrypoint. NATS-driven: subscribe Vision events, analyze, publish.
+
+Run: python main.py
+"""
+
 import asyncio
-import json
-from datetime import datetime
+import signal
 
-from llm_client import analyze_image
-from nats_publisher import publish_message
+import nats
 
-
-IMAGE_PATH = "test.jpg"
-MODEL_NAME = "llava:7b"
-EVENT_ID = "evt_0001"
-CAMERA_ID = "cam01"
+import nats_subscriber
+from config import load_settings
+from minio_client import ImageFetcher
+from nats_publisher import LlmPublisher
 
 
-async def main():
-    print("이미지 분석 시작")
+async def run() -> None:
+    settings = load_settings()
+    print(
+        f"[llm] starting model={settings.llm_model_name} "
+        f"ollama={settings.ollama_url} minio={settings.minio_endpoint}"
+    )
 
-    summary = analyze_image(IMAGE_PATH, MODEL_NAME)
+    fetcher = ImageFetcher(
+        settings.minio_endpoint,
+        settings.minio_access_key,
+        settings.minio_secret_key,
+        settings.minio_bucket,
+        settings.minio_secure,
+    )
 
-    message = {
-        "event_id": EVENT_ID,
-        "camera_id": CAMERA_ID,
-        "source": "llm",
-        "timestamp": datetime.now().astimezone().isoformat(),
-        "data": {
-            "model_name": MODEL_NAME,
-            "summary": summary
-        }
-    }
+    stop_event = asyncio.Event()
+    loop = asyncio.get_running_loop()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        try:
+            loop.add_signal_handler(sig, stop_event.set)
+        except (NotImplementedError, AttributeError):
+            # Windows ProactorEventLoop doesn't support signal handlers;
+            # KeyboardInterrupt below handles Ctrl+C there.
+            pass
 
-    print("NATS 전송 메시지:")
-    print(json.dumps(message, indent=2, ensure_ascii=False))
+    nc = await nats.connect(settings.nats_url)
+    js = nc.jetstream()
+    publisher = LlmPublisher(js, settings.nats_llm_subject)
+    print(f"[llm] nats connected url={settings.nats_url} publish={settings.nats_llm_subject}")
 
-    await publish_message(message)
+    try:
+        await nats_subscriber.run(settings, js, fetcher, publisher, stop_event)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        await nc.drain()
+        print("[llm] shutdown complete")
 
-    print("NATS publish 완료")
+
+def main() -> None:
+    try:
+        asyncio.run(run())
+    except KeyboardInterrupt:
+        pass
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

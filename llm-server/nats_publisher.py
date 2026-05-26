@@ -1,15 +1,18 @@
+"""JetStream publisher for cs.llm.control.update."""
+
 import json
-import nats
 
 
-NATS_URL = "nats://localhost:4222"
-SUBJECT = "llm.analysis"
+class LlmPublisher:
+    def __init__(self, js, subject: str):
+        self.js = js
+        self.subject = subject
 
-
-async def publish_message(message):
-    nc = await nats.connect(NATS_URL)
-
-    payload = json.dumps(message, ensure_ascii=False).encode("utf-8")
-
-    await nc.publish(SUBJECT, payload)
-    await nc.drain()
+    async def publish(self, payload: dict) -> bool:
+        try:
+            data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+            await self.js.publish(self.subject, data)
+            return True
+        except Exception as e:
+            print(f"[publisher] publish failed: {e}")
+            return False

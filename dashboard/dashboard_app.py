@@ -10,17 +10,37 @@ import webbrowser
 from collections import deque
 from datetime import datetime
 
-from flask import Flask, jsonify, redirect, render_template_string, request, url_for
+from flask import Flask, jsonify, redirect, render_template_string, request, url_for, Response
 
 try:
     from nats.aio.client import Client as NATS
 except ImportError:
     NATS = None
 
+try:
+    from minio import Minio
+except ImportError:
+    Minio = None
+
 
 NATS_URL = os.environ.get("NATS_URL", "nats://127.0.0.1:4222")
 MEDIA_URL = os.environ.get("MEDIA_URL", "http://127.0.0.1:8889/cam01/")
 MAIN_SERVER_URL = os.environ.get("MAIN_SERVER_URL", "http://127.0.0.1:8000")
+
+MINIO_ENDPOINT = os.environ.get("MINIO_ENDPOINT", "localhost:9000")
+MINIO_ACCESS_KEY = os.environ.get("MINIO_ACCESS_KEY", "minio_admin")
+MINIO_SECRET_KEY = os.environ.get("MINIO_SECRET_KEY", "")
+MINIO_BUCKET = os.environ.get("MINIO_BUCKET", "capstone2")
+MINIO_SECURE = os.environ.get("MINIO_SECURE", "false").lower() == "true"
+
+minio_client = None
+if Minio is not None:
+    minio_client = Minio(
+        MINIO_ENDPOINT,
+        access_key=MINIO_ACCESS_KEY,
+        secret_key=MINIO_SECRET_KEY,
+        secure=MINIO_SECURE,
+    )
 TOPICS = [
     "cs.vision.control.detected",
     "cs.llm.control.update",
@@ -382,6 +402,9 @@ def update_event(subject, payload):
             image_key = image_key_from_payload(payload)
             if image_key:
                 event["image_key"] = image_key
+                # No direct image_url/base64? Serve the MinIO frame via local proxy.
+                if not event["image_src"]:
+                    event["image_src"] = "/image/" + image_key
 
             summary = data.get("summary") or payload.get("summary")
             if summary:
@@ -507,6 +530,23 @@ def messages_json():
             "nats_status_detail": nats_status_detail,
         }
     )
+
+
+@app.route("/image/<path:image_key>", methods=["GET"])
+def get_image(image_key):
+    """Proxy a detected frame from MinIO so the browser can render it via image_key."""
+    if minio_client is None:
+        return Response("minio client unavailable (minio package not installed)", status=503)
+    resp = None
+    try:
+        resp = minio_client.get_object(MINIO_BUCKET, image_key)
+        return Response(resp.read(), mimetype="image/jpeg")
+    except Exception as exc:
+        return Response(f"image fetch failed: {exc}", status=404)
+    finally:
+        if resp is not None:
+            resp.close()
+            resp.release_conn()
 
 
 @app.route("/set-media-url", methods=["POST"])
