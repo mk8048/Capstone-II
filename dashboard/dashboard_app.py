@@ -213,6 +213,11 @@ HTML_TEMPLATE = """
             </div></div>`;
         }
 
+        const openPayloads = new Set();
+        function onPayloadToggle(eventId, isOpen) {
+            if (isOpen) openPayloads.add(eventId); else openPayloads.delete(eventId);
+        }
+
         function renderEvent(event) {
             const objects = event.objects.length
                 ? event.objects.map((obj) => `<span class="tag">${escapeHtml(obj.class_name)} ${escapeHtml(obj.confidence_text)}</span>`).join("")
@@ -236,7 +241,7 @@ HTML_TEMPLATE = """
                     <div class="label">LLM 요약</div><div class="value">${escapeHtml(llmSummary)}</div>
                 </div>
                 ${renderImage(event)}
-                <details>
+                <details${openPayloads.has(event.event_id) ? " open" : ""} ontoggle="onPayloadToggle('${event.event_id}', this.open)">
                     <summary class="small" style="margin-top:10px; cursor:pointer;">원본 NATS payload</summary>
                     <div class="raw">${escapeHtml(JSON.stringify(event.raw_payloads, null, 2))}</div>
                 </details>
