@@ -47,9 +47,8 @@ main-server는 NATS 메시지만 수신한다. **vision-server는 main-server의
 ```
 vision-server/
 ├── README.md                  # 본 문서
-├── vision_start.ps1           # 통합 launcher (SSH 터널 + MediaMTX + Vision, 중복 실행 가드)
+├── vision_start.ps1           # 통합 launcher (SSH 터널 + MediaMTX + Vision)
 ├── mediamtx.yml               # MediaMTX 설정
-├── prototype.py               # 단일 이미지 실험 스크립트 (참고용)
 ├── requirements.txt           # CUDA PyTorch(cu128) + ultralytics + nats-py + minio + ...
 ├── .env.example               # 환경변수 템플릿 (시크릿은 placeholder)
 └── app/
